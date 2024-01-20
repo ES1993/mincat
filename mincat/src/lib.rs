@@ -1,6 +1,8 @@
 use crate::router::Router;
 use app::App;
 
+pub mod extract;
+
 pub(crate) mod app;
 
 pub use mincat_core::*;

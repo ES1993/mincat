@@ -4,10 +4,26 @@ use http::Method;
 
 use crate::{handler::Handler, middleware::Middleware, route::Route};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Endpoint {
     path: String,
     method_handler: HashMap<Method, Handler>,
+}
+
+impl Endpoint {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn path(&mut self, path: &str) -> Self {
+        self.path = path.to_owned();
+        self.clone()
+    }
+
+    fn method_handler(&mut self, method: &Method, handler: &Handler) -> Self {
+        self.method_handler.insert(method.clone(), handler.clone());
+        self.clone()
+    }
 }
 
 #[derive(Clone, Default)]
@@ -61,15 +77,10 @@ impl Router {
             self.path_index
                 .insert(&path, index)
                 .expect("path_index insert failed");
-            let mut method_handler = HashMap::new();
-            method_handler.insert(method, handler);
-            self.index_endpoint.insert(
-                index,
-                Endpoint {
-                    path,
-                    method_handler,
-                },
-            );
+            let endpoint = Endpoint::new()
+                .path(&path)
+                .method_handler(&method, &handler);
+            self.index_endpoint.insert(index, endpoint);
             self.index += 1;
         };
 

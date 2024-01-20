@@ -4,7 +4,7 @@ use bytes::Bytes;
 use http_body_util::{combinators::BoxBody, BodyExt, Empty, Full};
 use hyper::body::Incoming;
 
-type BoxBodyError = Box<dyn Error + Send + Sync>;
+pub type BoxBodyError = Box<dyn Error + Send + Sync>;
 pub struct Body(BoxBody<Bytes, BoxBodyError>);
 
 impl Body {
@@ -21,11 +21,18 @@ impl Body {
     }
 }
 
-impl From<&'static str> for Body {
-    fn from(value: &'static str) -> Self {
-        Body(full(value))
-    }
+macro_rules! body_from_impl {
+    ($ty:ty) => {
+        impl From<$ty> for Body {
+            fn from(value: $ty) -> Self {
+                Body(full(value))
+            }
+        }
+    };
 }
+
+body_from_impl!(&'static str);
+body_from_impl!(String);
 
 fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, BoxBodyError> {
     Full::new(chunk.into()).map_err(Into::into).boxed()

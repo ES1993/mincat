@@ -1,4 +1,4 @@
-use std::{convert::Infallible, net::SocketAddr, sync::Arc};
+use std::{convert::Infallible, net::SocketAddr, sync::Arc, time::Duration};
 
 use bytes::Bytes;
 use http::{Request, Response};
@@ -10,7 +10,14 @@ use hyper_util::{
 };
 use tokio::net::TcpListener;
 
-use crate::{body::Body, http::StatusCode, router::Router};
+use crate::{
+    body::{Body, BoxBodyError},
+    http::StatusCode,
+    router::Router,
+};
+
+#[derive(Debug, Clone)]
+pub struct MincatRoutePath(pub String);
 
 #[derive(Clone)]
 pub struct App {
@@ -34,11 +41,18 @@ impl App {
     }
 
     pub async fn run(&mut self, addr: &str) {
-        let addr = addr.parse::<SocketAddr>().expect("地址错误");
+        let addr = addr.parse::<SocketAddr>().expect("addr parse failed");
         let listener = TcpListener::bind(addr).await.expect("tcp bind failed");
 
         loop {
-            let (stream, _) = listener.accept().await.expect("tcp accept failed");
+            let (stream, _) = match listener.accept().await {
+                Ok(conn) => conn,
+                Err(e) => {
+                    tracing::error!("accept error: {e}");
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                    continue;
+                }
+            };
             let io = TokioIo::new(stream);
             let router = self.router.clone();
             let service = service_fn(move |request| {
@@ -47,29 +61,30 @@ impl App {
             });
 
             tokio::task::spawn(async move {
-                match Builder::new(TokioExecutor::new())
+                if let Err(e) = Builder::new(TokioExecutor::new())
                     .serve_connection_with_upgrades(io, service)
                     .await
                 {
-                    Ok(_) => (),
-                    Err(_) => (),
+                    tracing::error!("serve_connection_with_upgrades error: {e}");
                 }
             });
         }
     }
 }
 
-type Error = Box<dyn std::error::Error + Send + Sync>;
-
 async fn handler(
     router: Arc<Router>,
     request: Request<Incoming>,
-) -> Result<Response<BoxBody<Bytes, Error>>, Infallible> {
-    let request = request.map(Body::incoming);
+) -> Result<Response<BoxBody<Bytes, BoxBodyError>>, Infallible> {
+    let mut request = request.map(Body::incoming);
     let path = request.uri().path();
     let method = request.method();
 
-    if let Some((_define_path, handler)) = router.get_handler(method, path) {
+    if let Some((define_path, handler)) = router.get_handler(method, path) {
+        request
+            .extensions_mut()
+            .insert(MincatRoutePath(define_path));
+
         return Ok(handler.exectue(request).await.map(Body::box_body));
     }
 
