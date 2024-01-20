@@ -47,19 +47,19 @@ pub struct Path<T>(pub T);
 #[async_trait::async_trait]
 impl<T> FromRequest for Path<T>
 where
-    T: Default + DeserializeOwned + Clone + Send + 'static,
+    T: DeserializeOwned + Clone + Send + 'static,
 {
     type Error = ExtractError;
 
     async fn from_request(request: &mut Request) -> Result<Self, Self::Error> {
-        let mut res = T::default();
+        let MincatRoutePath(path) = request
+            .extensions()
+            .get::<MincatRoutePath>()
+            .ok_or(ExtractError("missing path".to_string()))?;
 
-        if let Some(MincatRoutePath(path)) = request.extensions().get::<MincatRoutePath>() {
-            let path_args = get_path_args_tuple(path, request.uri().path())?;
-            res = T::deserialize(PathDeserializer(path_args.iter()))?;
-        }
+        let path_args = get_path_args_tuple(path, request.uri().path())?;
 
-        Ok(Path(res))
+        Ok(Path(T::deserialize(PathDeserializer(path_args.iter()))?))
     }
 }
 

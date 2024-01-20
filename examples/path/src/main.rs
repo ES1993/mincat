@@ -21,7 +21,7 @@ async fn hello2(Path(path): Path<HashMap<String, String>>) -> &'static str {
     "hello word"
 }
 
-#[derive(Default, Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 struct PathParams {
     id: u64,
     name: String,

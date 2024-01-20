@@ -6,6 +6,7 @@ use std::{error::Error, fmt::Display};
 use http::StatusCode;
 use mincat_core::response::{IntoResponse, Response};
 pub use path::Path;
+pub use query::Query;
 
 #[derive(Debug)]
 pub struct ExtractError(pub String);
