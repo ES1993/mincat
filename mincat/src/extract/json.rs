@@ -33,7 +33,7 @@ where
 
 impl<T> IntoResponse for Json<T>
 where
-    T: Serialize + Clone + Send + 'static,
+    T: Serialize,
 {
     fn into_response(self) -> Response {
         let mut buf = BytesMut::with_capacity(128).writer();
