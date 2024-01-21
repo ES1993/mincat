@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 
 #[tokio::main]
 async fn main() {
-    // client url = /hello?id=2&name=lucy
     let router = Router::new().route(hello);
 
     mincat::router(router).run("127.0.0.1:3000").await;

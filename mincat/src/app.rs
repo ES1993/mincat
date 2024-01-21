@@ -1,7 +1,7 @@
 use std::{convert::Infallible, net::SocketAddr, sync::Arc, time::Duration};
 
 use bytes::Bytes;
-use http::{Request, Response};
+use http::{Extensions, Request, Response};
 use http_body_util::combinators::BoxBody;
 use hyper::{body::Incoming, service::service_fn};
 use hyper_util::{
@@ -19,24 +19,33 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct MincatRoutePath(pub String);
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct App {
     router: Arc<Router>,
+    state: Extensions,
 }
 
 impl App {
     pub fn new() -> Self {
-        App {
-            router: Arc::new(Router::new()),
-        }
+        Self::default()
     }
 
     pub fn router(&mut self, router: Router) -> Self {
-        self.router = Arc::new(router);
+        let mut self_router = self.router.clone();
+        let self_router = Arc::make_mut(&mut self_router);
+        self.router = Arc::new(self_router.merge(router));
         self.clone()
     }
 
-    pub fn state(&mut self) -> Self {
+    pub fn state<T>(&mut self, state: T) -> Self
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        self.state.insert(state);
+        // let mut self_state = self.state.clone();
+        // let self_state = Arc::make_mut(&mut self_state);
+        // self_state.insert(TypeId::of::<T>(), Box::new(state));
+        // self.state = Arc::new(self_state.clone());
         self.clone()
     }
 
@@ -55,8 +64,11 @@ impl App {
             };
             let io = TokioIo::new(stream);
             let router = self.router.clone();
-            let service = service_fn(move |request| {
+            let state = self.state.clone();
+            let service = service_fn(move |mut request| {
                 let router = router.clone();
+                let state = state.clone();
+                request.extensions_mut().extend(state);
                 handler(router, request)
             });
 
