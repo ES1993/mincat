@@ -1,6 +1,9 @@
+use mincat::{
+    extract::Query,
+    http::{get, Router},
+};
+use serde::Deserialize;
 use std::collections::HashMap;
-
-use mincat::{extract::Query, http::get, router::Router};
 
 #[tokio::main]
 async fn main() {
@@ -16,7 +19,7 @@ async fn hello1(Query(query): Query<HashMap<String, String>>) -> &'static str {
     "hello word"
 }
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 struct QueryParams {
     id: u64,
     name: String,

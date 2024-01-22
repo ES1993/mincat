@@ -1,4 +1,4 @@
-use mincat::{http::get, router::Router};
+use mincat::http::{get, Router};
 
 #[tokio::main]
 async fn main() {

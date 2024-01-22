@@ -1,6 +1,9 @@
+use mincat::{
+    extract::Path,
+    http::{get, Router},
+};
+use serde::Deserialize;
 use std::collections::HashMap;
-
-use mincat::{extract::Path, http::get, router::Router};
 
 #[tokio::main]
 async fn main() {
@@ -21,7 +24,7 @@ async fn hello2(Path(path): Path<HashMap<String, String>>) -> &'static str {
     "hello word"
 }
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 struct PathParams {
     id: u64,
     name: String,

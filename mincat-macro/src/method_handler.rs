@@ -21,11 +21,22 @@ pub fn generate(
         #func
 
         #[allow(non_camel_case_types)]
+        #[derive(Clone, Copy)]
         #func_vis struct #func_name;
 
-        impl From<#func_name> for mincat::route::Route {
-            fn from(_:#func_name) -> mincat::route::Route {
-                mincat::route::Route::init(#method, #path, #new_func_name)
+        impl #func_name {
+            fn middleware<T>(&mut self, middleware: T) -> mincat::http::Route
+            where
+                T: Into<Box<dyn mincat::middleware::Middleware>>,
+            {
+                let mut route =  mincat::http::Route::init(#method, #path, #new_func_name);
+                route.middleware(middleware)
+            }
+        }
+
+        impl From<#func_name> for mincat::http::Route {
+            fn from(_:#func_name) -> mincat::http::Route {
+                mincat::http::Route::init(#method, #path, #new_func_name)
             }
         }
     )

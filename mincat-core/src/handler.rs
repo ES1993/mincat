@@ -1,10 +1,10 @@
-use std::{fmt::Debug, future::Future, marker::PhantomData};
+use std::{collections::VecDeque, fmt::Debug, future::Future, marker::PhantomData};
 
 use mincat_macro::repeat_macro_max_generics_param;
 
 use crate::{
-    body::Body,
     middleware::Middleware,
+    next::Next,
     request::{FromRequest, Request},
     response::{IntoResponse, Response},
 };
@@ -12,14 +12,19 @@ use crate::{
 #[derive(Clone)]
 pub struct Handler {
     pub func: Box<dyn HandlerFunc>,
-    pub middleware: Vec<Box<dyn Middleware>>,
+    pub middleware: Option<VecDeque<Box<dyn Middleware>>>,
 }
 
 impl Debug for Handler {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut middleware_len = 0;
+        if let Some(middleware) = &self.middleware {
+            middleware_len = middleware.len();
+        }
+
         f.debug_struct("Handler")
             .field("func", &"func")
-            .field("middleware", &self.middleware.len())
+            .field("middleware", &middleware_len)
             .finish()
     }
 }
@@ -27,27 +32,17 @@ impl Debug for Handler {
 impl Handler {
     pub fn middleware<T>(&mut self, middleware: T) -> Self
     where
-        T: Middleware,
+        T: Into<Box<dyn Middleware>>,
     {
-        self.middleware.push(Box::new(middleware));
+        self.middleware
+            .get_or_insert(VecDeque::new())
+            .push_back(middleware.into());
 
         self.clone()
     }
 
-    pub async fn exectue(self, mut request: Request) -> Response {
-        for middleware in &self.middleware {
-            let mut response = Response::new(Body::empty());
-            middleware.on_request(&mut request, &mut response).await;
-        }
-
-        let response = self.func.call(&mut request).await;
-
-        for middleware in &self.middleware {
-            let mut response = Response::new(Body::empty());
-            middleware.on_request(&mut request, &mut response).await;
-        }
-
-        response
+    pub async fn exectue(self, request: Request) -> Response {
+        Next::new(self).run(request).await
     }
 }
 
@@ -100,7 +95,7 @@ where
     fn from(value: FuncParamHandler<Func, Param>) -> Self {
         Handler {
             func: Box::new(value),
-            middleware: vec![],
+            middleware: None,
         }
     }
 }

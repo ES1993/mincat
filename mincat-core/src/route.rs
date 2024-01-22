@@ -1,7 +1,11 @@
 use http::Method;
 
-use crate::handler::{FuncParamHandler, Handler, HandlerFuncParam};
+use crate::{
+    handler::{FuncParamHandler, Handler, HandlerFuncParam},
+    middleware::Middleware,
+};
 
+#[derive(Clone)]
 pub struct Route {
     pub method: Method,
     pub path: String,
@@ -9,8 +13,12 @@ pub struct Route {
 }
 
 impl Route {
-    pub fn middleware(&mut self) -> Self {
-        todo!()
+    pub fn middleware<T>(&mut self, middleware: T) -> Self
+    where
+        T: Into<Box<dyn Middleware>>,
+    {
+        self.handler.middleware(middleware);
+        self.clone()
     }
 
     pub fn init<Path, Func, Param>(method: Method, path: Path, func: Func) -> Self

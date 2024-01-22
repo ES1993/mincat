@@ -1,9 +1,11 @@
+use mincat::{
+    extract::State,
+    http::{get, Router},
+};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc, RwLock,
 };
-
-use mincat::{extract::State, http::get, router::Router};
 
 #[derive(Debug, Clone, Default)]
 struct App {

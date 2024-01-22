@@ -2,6 +2,12 @@ use proc_macro::TokenStream;
 
 mod generics_param;
 mod method_handler;
+mod middleware;
+
+#[proc_macro_attribute]
+pub fn middleware(_: TokenStream, input: TokenStream) -> TokenStream {
+    middleware::generate(input)
+}
 
 #[proc_macro]
 pub fn repeat_macro_max_generics_param(input: TokenStream) -> TokenStream {

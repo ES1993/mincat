@@ -1,20 +1,18 @@
 use std::{convert::Infallible, net::SocketAddr, sync::Arc, time::Duration};
 
 use bytes::Bytes;
-use http::{Extensions, Request, Response};
+use http::{Extensions, Request, Response, StatusCode};
 use http_body_util::combinators::BoxBody;
 use hyper::{body::Incoming, service::service_fn};
 use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     server::conn::auto::Builder,
 };
-use tokio::net::TcpListener;
-
-use crate::{
+use mincat_core::{
     body::{Body, BoxBodyError},
-    http::StatusCode,
     router::Router,
 };
+use tokio::net::TcpListener;
 
 #[derive(Debug, Clone)]
 pub struct MincatRoutePath(pub String);
@@ -42,10 +40,6 @@ impl App {
         T: Clone + Send + Sync + 'static,
     {
         self.state.insert(state);
-        // let mut self_state = self.state.clone();
-        // let self_state = Arc::make_mut(&mut self_state);
-        // self_state.insert(TypeId::of::<T>(), Box::new(state));
-        // self.state = Arc::new(self_state.clone());
         self.clone()
     }
 

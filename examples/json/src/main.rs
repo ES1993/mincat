@@ -1,4 +1,7 @@
-use mincat::{extract::Json, http::post, router::Router};
+use mincat::{
+    extract::Json,
+    http::{post, Router},
+};
 use serde::{Deserialize, Serialize};
 
 #[tokio::main]
