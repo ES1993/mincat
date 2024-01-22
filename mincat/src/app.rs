@@ -1,5 +1,3 @@
-use std::{convert::Infallible, net::SocketAddr, sync::Arc, time::Duration};
-
 use bytes::Bytes;
 use http::{Extensions, Request, Response, StatusCode};
 use http_body_util::combinators::BoxBody;
@@ -10,8 +8,10 @@ use hyper_util::{
 };
 use mincat_core::{
     body::{Body, BoxBodyError},
+    response::IntoResponse,
     router::Router,
 };
+use std::{convert::Infallible, net::SocketAddr, sync::Arc, time::Duration};
 use tokio::net::TcpListener;
 
 #[derive(Debug, Clone)]
@@ -94,11 +94,5 @@ async fn handler(
         return Ok(handler.exectue(request).await.map(Body::box_body));
     }
 
-    let res = Response::builder()
-        .status(StatusCode::NOT_FOUND)
-        .body(Body::empty())
-        .unwrap()
-        .map(Body::box_body);
-
-    Ok(res)
+    Ok(StatusCode::NOT_FOUND.into_response().map(Body::box_body))
 }
