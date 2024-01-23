@@ -48,6 +48,10 @@ impl Router {
     }
 
     pub fn group(&mut self, path: &str, router: Router) -> Self {
+        if !path.starts_with('/') {
+            panic!("group routes must start with '/'");
+        }
+
         for (_, endpoint) in router.index_endpoint {
             let path = format!("{}{}", path, endpoint.path);
             for (method, hadnler) in endpoint.method_handler {

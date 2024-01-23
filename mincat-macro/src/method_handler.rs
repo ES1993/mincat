@@ -13,6 +13,9 @@ pub fn generate(
     let method = format_ident!("{}", method);
     let method = quote!(mincat::http::Method::#method);
     let path = parse_macro_input!(path as LitStr);
+    if !path.value().starts_with('/') {
+        panic!("route path must start with '/'");
+    }
 
     func.sig.ident = new_func_name.clone();
 
