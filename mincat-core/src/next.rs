@@ -8,15 +8,15 @@ impl Next {
         Self(handler)
     }
 
-    pub async fn run(mut self, mut request: Request) -> Response {
+    pub async fn run(mut self, request: Request) -> Response {
         if let Some(arr) = &mut self.0.middleware {
             if let Some(middleware) = arr.pop_back() {
                 middleware.call(request, self).await
             } else {
-                self.0.func.call(&mut request).await
+                self.0.func.call(request).await
             }
         } else {
-            self.0.func.call(&mut request).await
+            self.0.func.call(request).await
         }
     }
 }

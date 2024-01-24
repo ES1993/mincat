@@ -24,8 +24,8 @@ impl Route {
     pub fn init<Path, Func, Param>(method: Method, path: Path, func: Func) -> Self
     where
         Path: Into<String>,
-        Func: HandlerFuncParam<Param>,
-        Param: Clone + Send + Sync + 'static,
+        Func: HandlerFuncParam<Param> + Sync + Clone + 'static,
+        Param: Send + Sync + 'static,
     {
         let path = path.into();
         let handler = FuncParamHandler::from(func).into();

@@ -5,7 +5,7 @@ use mincat_macro::repeat_macro_max_generics_param;
 use crate::{
     middleware::Middleware,
     next::Next,
-    request::{FromRequest, Request},
+    request::{FromRequest, FromRequestParts, Request},
     response::{IntoResponse, Response},
 };
 
@@ -47,8 +47,8 @@ impl Handler {
 }
 
 #[async_trait::async_trait]
-pub trait HandlerFunc: Send + Sync + 'static {
-    async fn call(self: Box<Self>, request: &mut Request) -> Response;
+pub trait HandlerFunc: Send + Sync {
+    async fn call(self: Box<Self>, request: Request) -> Response;
 
     fn clone_box(&self) -> Box<dyn HandlerFunc>;
 }
@@ -60,15 +60,14 @@ impl Clone for Box<dyn HandlerFunc> {
 }
 
 #[async_trait::async_trait]
-pub trait HandlerFuncParam<Param>: Clone + Send + Sync + 'static {
-    async fn call(self, request: &mut Request) -> Response;
+pub trait HandlerFuncParam<Param>: Send {
+    async fn call(self, request: Request) -> Response;
 }
 
 #[derive(Clone)]
 pub struct FuncParamHandler<Func, Param>
 where
     Func: HandlerFuncParam<Param>,
-    Param: Clone + Send + Sync + 'static,
 {
     func: Func,
     _mark: PhantomData<Param>,
@@ -77,7 +76,6 @@ where
 impl<Func, Param> From<Func> for FuncParamHandler<Func, Param>
 where
     Func: HandlerFuncParam<Param>,
-    Param: Clone + Send + Sync + 'static,
 {
     fn from(value: Func) -> Self {
         Self {
@@ -89,8 +87,8 @@ where
 
 impl<Func, Param> From<FuncParamHandler<Func, Param>> for Handler
 where
-    Func: HandlerFuncParam<Param>,
-    Param: Clone + Send + Sync + 'static,
+    Func: HandlerFuncParam<Param> + Clone + Sync + 'static,
+    Param: Send + Sync + 'static,
 {
     fn from(value: FuncParamHandler<Func, Param>) -> Self {
         Handler {
@@ -103,53 +101,78 @@ where
 #[async_trait::async_trait]
 impl<Func, Param> HandlerFunc for FuncParamHandler<Func, Param>
 where
-    Func: HandlerFuncParam<Param>,
-    Param: Clone + Send + Sync + 'static,
+    Func: HandlerFuncParam<Param> + Clone + Sync + 'static,
+    Param: Send + Sync + 'static,
 {
-    async fn call(self: Box<Self>, request: &mut Request) -> Response {
+    async fn call(self: Box<Self>, request: Request) -> Response {
         self.func.call(request).await
     }
 
     fn clone_box(&self) -> Box<dyn HandlerFunc> {
-        Box::new(self.clone())
+        Box::new(Self {
+            func: self.func.clone(),
+            _mark: PhantomData,
+        })
+    }
+}
+
+#[async_trait::async_trait]
+impl<Func, Fut, Res> HandlerFuncParam<((),)> for Func
+where
+    Func: FnOnce() -> Fut,
+    Func: Clone + Send + Sync + 'static,
+    Fut: Future<Output = Res> + Send,
+    Res: IntoResponse,
+{
+    async fn call(self, _: Request) -> Response {
+        self().await.into_response()
     }
 }
 
 macro_rules! handle_func_param {
-    ($($param: ident),*) => {
+    ([$($param: ident),*], $lastparam:ident) => {
         #[allow(non_snake_case)]
         #[async_trait::async_trait]
-        impl<Func, Fut, Res, $($param),*> HandlerFuncParam<($($param,)*)> for Func
+        impl<Func, Fut, Res, $($param,)* $lastparam> HandlerFuncParam<($($param,)* $lastparam,)> for Func
         where
-            Func: FnOnce($($param),*) -> Fut,
+            Func: FnOnce($($param,)* $lastparam,) -> Fut,
             Func: Clone + Send + Sync + 'static,
             Fut: Future<Output = Res> + Send,
             Res: IntoResponse,
-            $($param: FromRequest),*
+            $($param: FromRequestParts + Send,)*
+            $lastparam: FromRequest + Send
         {
-            #[allow(unused_variables)]
-            async fn call(self, request: &mut Request) -> Response {
-                let exec = || async move {
-                    let res = self($({
-                        let param = match $param::from_request(request).await {
-                            Ok(v) => v,
-                            Err(e) => return Err(e.into_response()),
-                        };
+            async fn call(self, request: Request) -> Response {
+                #[allow(unused_mut)]
+                let (mut parts, body) = request.into_parts();
 
-                        param
-                    }),*).await;
+                $(
+                    let $param = match $param::from_request_parts(&mut parts).await {
+                        Ok(v) => v,
+                        Err(e) => return e.into_response(),
+                    };
+                )*
 
-                    Ok::<Response,Response>(res.into_response())
+                let request = Request::from_parts(parts, body);
+
+                let $lastparam = match $lastparam::from_request(request).await {
+                    Ok(v) => v,
+                    Err(e) => return e.into_response(),
                 };
 
-                match exec().await {
-                    Ok(v) => v,
-                    Err(e) => e,
-                }
+                let res = self($($param,)* $lastparam,).await;
+
+                res.into_response()
             }
 
         }
     }
 }
 
-repeat_macro_max_generics_param!(handle_func_param, 17, P);
+macro_rules! handle_func_param_pre {
+    ($($param: ident),*) => {
+        handle_func_param!([$($param),*], T);
+    }
+}
+
+repeat_macro_max_generics_param!(handle_func_param_pre, 17, P);

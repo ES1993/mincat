@@ -1,14 +1,12 @@
-use bytes::Bytes;
-use http::{Extensions, Request, Response, StatusCode};
-use http_body_util::combinators::BoxBody;
+use http::{Extensions, Request, StatusCode};
 use hyper::{body::Incoming, service::service_fn};
 use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     server::conn::auto::Builder,
 };
 use mincat_core::{
-    body::{Body, BoxBodyError},
-    response::IntoResponse,
+    body::Body,
+    response::{IntoResponse, Response},
     router::Router,
 };
 use std::{convert::Infallible, net::SocketAddr, sync::Arc, time::Duration};
@@ -78,11 +76,8 @@ impl App {
     }
 }
 
-async fn handler(
-    router: Arc<Router>,
-    request: Request<Incoming>,
-) -> Result<Response<BoxBody<Bytes, BoxBodyError>>, Infallible> {
-    let mut request = request.map(Body::incoming);
+async fn handler(router: Arc<Router>, request: Request<Incoming>) -> Result<Response, Infallible> {
+    let mut request = request.map(Body::new);
     let path = request.uri().path();
     let method = request.method();
 
@@ -91,8 +86,8 @@ async fn handler(
             .extensions_mut()
             .insert(MincatRoutePath(define_path));
 
-        return Ok(handler.exectue(request).await.map(Body::box_body));
+        return Ok(handler.exectue(request).await);
     }
 
-    Ok(StatusCode::NOT_FOUND.into_response().map(Body::box_body))
+    Ok(StatusCode::NOT_FOUND.into_response())
 }

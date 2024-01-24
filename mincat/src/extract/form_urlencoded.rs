@@ -1,5 +1,4 @@
-use bytes::{BufMut, BytesMut};
-use http::{header, HeaderValue, StatusCode};
+use http::{header, StatusCode};
 use http_body_util::BodyExt;
 use mincat_core::{
     request::{FromRequest, Request, RequestExt},
@@ -9,10 +8,10 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use super::ExtractError;
 
-pub struct Json<T>(pub T);
+pub struct FormUrlencoded<T>(pub T);
 
 #[async_trait::async_trait]
-impl<T> FromRequest for Json<T>
+impl<T> FromRequest for FormUrlencoded<T>
 where
     T: DeserializeOwned + Clone + Send + 'static,
 {
@@ -27,37 +26,28 @@ where
             .map_err(|e| ExtractError(e.to_string()))?
             .to_bytes();
 
-        let data: T = serde_json::from_slice(&bytes).map_err(ExtractError::from)?;
+        let data: T = serde_urlencoded::from_bytes(&bytes).map_err(ExtractError::from)?;
 
-        Ok(Json(data))
+        Ok(FormUrlencoded(data))
     }
 }
 
-impl<T> IntoResponse for Json<T>
+impl<T> IntoResponse for FormUrlencoded<T>
 where
     T: Serialize,
 {
     fn into_response(self) -> Response {
-        let mut buf = BytesMut::with_capacity(128).writer();
-        match serde_json::to_writer(&mut buf, &self.0) {
-            Ok(_) => (
+        match serde_urlencoded::to_string(&self.0) {
+            Ok(body) => (
                 StatusCode::OK,
                 [(
                     header::CONTENT_TYPE,
-                    HeaderValue::from_static(mime::APPLICATION_JSON.as_ref()),
+                    mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
                 )],
-                buf.into_inner().freeze(),
+                body,
             )
                 .into_response(),
-            Err(err) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                [(
-                    header::CONTENT_TYPE,
-                    HeaderValue::from_static(mime::TEXT_PLAIN_UTF_8.as_ref()),
-                )],
-                err.to_string(),
-            )
-                .into_response(),
+            Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response(),
         }
     }
 }

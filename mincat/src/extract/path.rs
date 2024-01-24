@@ -1,6 +1,6 @@
 use std::{any::type_name, slice::Iter};
 
-use mincat_core::request::{FromRequest, Request};
+use mincat_core::request::{FromRequestParts, Parts};
 use serde::{
     de::{DeserializeOwned, DeserializeSeed, MapAccess, SeqAccess, Visitor},
     forward_to_deserialize_any, Deserializer,
@@ -41,23 +41,22 @@ fn get_path_args_tuple(
     Ok(res)
 }
 
-#[derive(Clone, Debug)]
 pub struct Path<T>(pub T);
 
 #[async_trait::async_trait]
-impl<T> FromRequest for Path<T>
+impl<T> FromRequestParts for Path<T>
 where
     T: DeserializeOwned + Clone + Send + 'static,
 {
     type Error = ExtractError;
 
-    async fn from_request(request: &mut Request) -> Result<Self, Self::Error> {
-        let MincatRoutePath(path) = request
-            .extensions()
+    async fn from_request_parts(parts: &mut Parts) -> Result<Self, Self::Error> {
+        let MincatRoutePath(path) = parts
+            .extensions
             .get::<MincatRoutePath>()
             .ok_or(ExtractError("missing path".to_string()))?;
 
-        let path_args = get_path_args_tuple(path, request.uri().path())?;
+        let path_args = get_path_args_tuple(path, parts.uri.path())?;
 
         Ok(Path(T::deserialize(PathDeserializer(path_args.iter()))?))
     }

@@ -1,2 +1,3 @@
 [workspace]
 members = ["mincat", "mincat-*", "examples/*"]
+resolver = "2"
