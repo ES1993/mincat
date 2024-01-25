@@ -4,7 +4,11 @@ use bytes::Bytes;
 use futures_util::Stream;
 use http_body::Body as _;
 use http_body_util::{combinators::BoxBody, BodyExt, Empty, Full};
-use std::{any::Any, pin::Pin, task::{Context, Poll}};
+use std::{
+    any::Any,
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 const BODY_LIMITED: usize = 1024 * 1204 * 2;
 

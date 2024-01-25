@@ -1,5 +1,5 @@
 use mincat::{
-    extract::FormUrlencoded,
+    extract::form::FormUrlencoded,
     http::{post, Router},
 };
 use serde::{Deserialize, Serialize};

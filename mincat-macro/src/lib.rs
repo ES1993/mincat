@@ -1,8 +1,14 @@
 use proc_macro::TokenStream;
 
+mod extract_form;
 mod generics_param;
 mod method_handler;
 mod middleware;
+
+#[proc_macro_derive(Form, attributes(multer))]
+pub fn derive_form(input: TokenStream) -> TokenStream {
+    extract_form::generate(input)
+}
 
 #[proc_macro_attribute]
 pub fn middleware(_: TokenStream, input: TokenStream) -> TokenStream {

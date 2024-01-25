@@ -5,12 +5,18 @@ mod path;
 mod query;
 mod state;
 
-pub use form_data::FormData;
-pub use form_urlencoded::FormUrlencoded;
 pub use json::Json;
 pub use path::Path;
 pub use query::Query;
 pub use state::State;
+
+pub mod form {
+    pub use super::form_data::{FormData, FromMultipartNull};
+    pub use super::form_urlencoded::FormUrlencoded;
+    pub use mincat_macro::Form;
+    pub use multer::Multipart;
+    pub use multer_derive::{Error, FormContext, FormFile, FromMultipart, MultipartForm};
+}
 
 use http::StatusCode;
 use mincat_core::response::{IntoResponse, Response};

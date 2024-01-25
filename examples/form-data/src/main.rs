@@ -1,49 +1,53 @@
 use mincat::{
-    extract::FormData,
+    extract::form::{Form, FormData, FormFile},
     http::{post, Router},
 };
-use serde::{Deserialize, Serialize};
 
 #[tokio::main]
 async fn main() {
-    let router = Router::new().route(hello);
+    let router = Router::new().route(hello1).route(hello2);
 
     mincat::router(router).run("127.0.0.1:3000").await;
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-struct Data {
-    id: u64,
-    name: String,
-}
-
-#[post("/hello")]
-async fn hello(mut form: FormData) -> Result<(), String> {
+#[post("/hello1")]
+async fn hello1(mut form: FormData) -> Result<(), String> {
     while let Some(mut field) = form.next_field().await.map_err(|e| e.to_string())? {
-        let a= field.headers().into_iter().map(|(name,value)|{
-            dbg!(name,value);
-            "s"
-        }).collect::<Vec<_>>();
-
-
-        // let name = field.name();
-        // let file_name = field.file_name();
-        // let content_type = field.content_type();
-
-        // println!(
-        //     "Name: {:?}, FileName: {:?}, Content-Type: {:?}",
-        //     name, file_name, content_type
-        // );
+        dbg!("=================split================");
+        dbg!(field.name());
+        dbg!(field.file_name());
+        dbg!(field.content_type());
 
         let mut field_bytes_len = 0;
         while let Some(field_chunk) = field.chunk().await.map_err(|e| e.to_string())? {
             field_bytes_len += field_chunk.len();
-            let s = String::from_utf8(field_chunk.to_vec());
-            dbg!(s);
         }
 
-        println!("Field Bytes Length: {:?}", field_bytes_len);
+        dbg!(field_bytes_len);
     }
 
+    Ok(())
+}
+
+#[derive(Form, Debug)]
+struct Data {
+    string: String,
+    integer: i128,
+    boolean: bool,
+    number: usize,
+    files: Vec<FormFile>,
+}
+
+#[post("/hello2")]
+async fn hello2(FormData(form): FormData<Data>) -> Result<(), String> {
+    dbg!(form.string, form.integer, form.boolean, form.number);
+    for file in form.files {
+        dbg!(
+            file.name(),
+            file.file_name(),
+            file.content_type(),
+            file.bytes().len()
+        );
+    }
     Ok(())
 }
