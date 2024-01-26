@@ -115,7 +115,7 @@ impl Router {
 
     pub fn middleware<T>(&mut self, middleware: T) -> Self
     where
-        T: Into<Box<dyn Middleware>> + Clone,
+        T: Into<Box<dyn Middleware>>,
     {
         let middleware = middleware.into();
         for endpoint in self.index_endpoint.borrow_mut().values_mut() {

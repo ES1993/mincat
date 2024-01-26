@@ -7,8 +7,9 @@ use crate::{
 };
 
 #[async_trait::async_trait]
-pub trait Middleware: Send + Sync + 'static {
+pub trait Middleware: Send + Sync {
     async fn call(self: Box<Self>, request: Request, next: Next) -> Response;
+
     fn clone_box(&self) -> Box<dyn Middleware>;
 }
 
@@ -18,7 +19,6 @@ impl Clone for Box<dyn Middleware> {
     }
 }
 
-#[derive(Clone)]
 pub struct FuncMiddleware<Func>(Func)
 where
     Func: MiddlewareFunc;
@@ -42,7 +42,7 @@ where
     }
 
     fn clone_box(&self) -> Box<dyn Middleware> {
-        Box::new(self.clone())
+        Box::new(FuncMiddleware(self.0.clone()))
     }
 }
 
