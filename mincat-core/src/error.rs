@@ -1,5 +1,9 @@
 use std::{error::Error as StdError, fmt};
 
+use http::StatusCode;
+
+use crate::response::IntoResponse;
+
 pub type BoxError = Box<dyn StdError + Send + Sync>;
 
 #[derive(Debug)]
@@ -28,5 +32,11 @@ impl fmt::Display for Error {
 impl StdError for Error {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         Some(&*self.inner)
+    }
+}
+
+impl IntoResponse for Error {
+    fn into_response(self) -> crate::response::Response {
+        (StatusCode::INTERNAL_SERVER_ERROR, self.inner.to_string()).into_response()
     }
 }

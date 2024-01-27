@@ -132,3 +132,16 @@ where
         insert_headers(res, self.1).into_response()
     }
 }
+
+impl<K, V, const N: usize> IntoResponse for (StatusCode, [(K, V); N])
+where
+    K: TryInto<HeaderName>,
+    K::Error: std::fmt::Display,
+    V: TryInto<HeaderValue>,
+    V::Error: std::fmt::Display,
+{
+    fn into_response(self) -> Response {
+        let res = self.0.into_response();
+        insert_headers(res, self.1).into_response()
+    }
+}

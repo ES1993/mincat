@@ -5,6 +5,9 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+session = []
+
 [dependencies]
 mincat-core = { path = "../mincat-core" }
 mincat-macro = { path = "../mincat-macro" }
@@ -24,3 +27,5 @@ serde_urlencoded = "0.7.1"
 mime = "0.3.17"
 multer = "3.0.0"
 multer-derive = "0.1.1-alpha"
+cookie = { version = "0.18.0", features = ["percent-encode", "private"] }
+uuid = "1.7.0"
