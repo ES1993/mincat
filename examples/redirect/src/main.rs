@@ -12,7 +12,7 @@ async fn main() {
 
 #[get("/hello1")]
 async fn hello1() -> Redirect {
-    Redirect::sse("/hello2")
+    Redirect::sse_other("/hello2")
 }
 
 #[get("/hello2")]

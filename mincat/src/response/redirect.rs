@@ -1,5 +1,5 @@
 use http::{header, HeaderValue, StatusCode};
-use mincat_core::response::{IntoResponse, Response};
+use mincat_core::response::{IntoResponse, IntoResponseParts, Response};
 
 pub struct Redirect {
     status_code: StatusCode,
@@ -7,7 +7,7 @@ pub struct Redirect {
 }
 
 impl Redirect {
-    pub fn sse(uri: &str) -> Self {
+    pub fn sse_other(uri: &str) -> Self {
         Self::with_status_code(StatusCode::SEE_OTHER, uri)
     }
 
@@ -34,5 +34,15 @@ impl Redirect {
 impl IntoResponse for Redirect {
     fn into_response(self) -> Response {
         (self.status_code, [(header::LOCATION, self.location)]).into_response()
+    }
+}
+
+impl IntoResponseParts for Redirect {
+    fn into_response_parts(self, mut response: Response) -> Response {
+        *response.status_mut() = self.status_code;
+        response
+            .headers_mut()
+            .extend([(header::LOCATION, self.location)]);
+        response
     }
 }

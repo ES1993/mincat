@@ -175,4 +175,4 @@ macro_rules! handle_func_param_pre {
     }
 }
 
-repeat_macro_max_generics_param!(handle_func_param_pre, 17, P);
+repeat_macro_max_generics_param!(handle_func_param_pre, 0, 17, P);

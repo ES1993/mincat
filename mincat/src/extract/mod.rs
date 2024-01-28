@@ -1,3 +1,5 @@
+#[cfg(feature = "cookie")]
+pub mod cookie;
 mod form_data;
 mod form_urlencoded;
 mod json;

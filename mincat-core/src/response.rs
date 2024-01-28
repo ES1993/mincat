@@ -2,6 +2,7 @@ use std::convert::Infallible;
 
 use bytes::Bytes;
 use http::{header, HeaderName, HeaderValue, StatusCode};
+use mincat_macro::repeat_macro_max_generics_param;
 
 use crate::body::Body;
 
@@ -11,15 +12,31 @@ pub trait IntoResponse {
     fn into_response(self) -> Response;
 }
 
+pub trait IntoResponseParts {
+    fn into_response_parts(self, response: Response) -> Response;
+}
+
 impl IntoResponse for () {
     fn into_response(self) -> Response {
         Response::new(Body::empty())
     }
 }
 
+impl IntoResponseParts for () {
+    fn into_response_parts(self, response: Response) -> Response {
+        response
+    }
+}
+
 impl IntoResponse for Infallible {
     fn into_response(self) -> Response {
         Response::new(Body::empty())
+    }
+}
+
+impl IntoResponseParts for Infallible {
+    fn into_response_parts(self, response: Response) -> Response {
+        response
     }
 }
 
@@ -47,6 +64,13 @@ impl IntoResponse for StatusCode {
         let mut res = ().into_response();
         *res.status_mut() = self;
         res
+    }
+}
+
+impl IntoResponseParts for StatusCode {
+    fn into_response_parts(self, mut response: Response) -> Response {
+        *response.status_mut() = self;
+        response
     }
 }
 
@@ -89,17 +113,6 @@ impl IntoResponse for Bytes {
     }
 }
 
-impl<R> IntoResponse for (StatusCode, R)
-where
-    R: IntoResponse,
-{
-    fn into_response(self) -> Response {
-        let mut res = self.1.into_response();
-        *res.status_mut() = self.0;
-        res
-    }
-}
-
 fn insert_headers<K, V, const N: usize>(
     mut res: Response,
     arr: [(K, V); N],
@@ -118,30 +131,69 @@ where
     Ok(res)
 }
 
-impl<K, V, const N: usize, R> IntoResponse for (StatusCode, [(K, V); N], R)
+impl<K, V, const N: usize> IntoResponse for [(K, V); N]
 where
-    R: IntoResponse,
     K: TryInto<HeaderName>,
     K::Error: std::fmt::Display,
     V: TryInto<HeaderValue>,
     V::Error: std::fmt::Display,
 {
     fn into_response(self) -> Response {
-        let mut res = self.2.into_response();
-        *res.status_mut() = self.0;
-        insert_headers(res, self.1).into_response()
+        let res = ().into_response();
+        insert_headers(res, self).into_response()
     }
 }
 
-impl<K, V, const N: usize> IntoResponse for (StatusCode, [(K, V); N])
+impl<K, V, const N: usize> IntoResponseParts for [(K, V); N]
 where
     K: TryInto<HeaderName>,
     K::Error: std::fmt::Display,
     V: TryInto<HeaderValue>,
     V::Error: std::fmt::Display,
 {
-    fn into_response(self) -> Response {
-        let res = self.0.into_response();
-        insert_headers(res, self.1).into_response()
+    fn into_response_parts(self, response: Response) -> Response {
+        insert_headers(response, self).into_response()
     }
 }
+
+macro_rules! impl_into_response_parts_tuple {
+    ( $($ty:ident),* ) => {
+        #[allow(non_snake_case)]
+        impl<$($ty,)*> IntoResponseParts for ($($ty,)*)
+        where
+            $( $ty: IntoResponseParts, )*
+        {
+            fn into_response_parts(self,response: Response) -> Response {
+                let ($($ty,)*) = self;
+                $(
+                    let response = $ty.into_response_parts(response);
+                )*
+                response
+            }
+        }
+    }
+}
+
+repeat_macro_max_generics_param!(impl_into_response_parts_tuple, 1, 17, P);
+
+macro_rules! impl_into_response_tuple {
+    ( $($ty:ident),* ) => {
+        #[allow(non_snake_case)]
+        impl<R, $($ty,)*> IntoResponse for ($($ty),*, R)
+        where
+            $( $ty: IntoResponseParts, )*
+            R: IntoResponse,
+        {
+            fn into_response(self) -> Response {
+                let ( $($ty),*, response) = self;
+                let response = response.into_response();
+                $(
+                    let response = $ty.into_response_parts(response);
+                )*
+                response
+            }
+        }
+    };
+}
+
+repeat_macro_max_generics_param!(impl_into_response_tuple, 1, 17, P);
