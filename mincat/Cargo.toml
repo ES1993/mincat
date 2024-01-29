@@ -36,3 +36,5 @@ cookie = { version = "0.18.0", features = [
     "private",
 ], optional = true }
 uuid = { version = "1.7.0", features = ["v4"], optional = true }
+derive_builder = "0.13.0"
+chrono = "0.4.33"

@@ -1,14 +1,19 @@
 use mincat::{
     extract::{cookie::CookieKey, Session},
     http::{get, Router},
-    middleware::session::{MemorySession, StoreSession},
+    middleware::session::{MemorySessionBuilder, StoreSession},
 };
 
 #[tokio::main]
 async fn main() {
-    let router = Router::new()
-        .route(hello)
-        .middleware(StoreSession::from(MemorySession::default()));
+    let memory_session = MemorySessionBuilder::default()
+        .age(10) // Expiration time (unit seconds,default 3600)
+        .interval(30) // Cleanup expired task cycle time (unit seconds,default 60)
+        .build()
+        .unwrap();
+    let stor_session = StoreSession::from(memory_session);
+
+    let router = Router::new().route(hello).middleware(stor_session);
 
     mincat::router(router)
         .state(CookieKey::from("xxxx"))
@@ -17,7 +22,7 @@ async fn main() {
 }
 
 #[get("/hello")]
-async fn hello(mut session: Session) -> &'static str {
+async fn hello(session: Session) -> &'static str {
     let user_name = session.get::<String>("user name").await.unwrap();
     dbg!(user_name);
     session.set("user name", "xiao li").await.unwrap();

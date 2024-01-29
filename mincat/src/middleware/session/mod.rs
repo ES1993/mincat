@@ -8,14 +8,18 @@ use mincat_core::{
 
 use crate::extract::{
     cookie::{Cookie, PrivateCookieJar},
-    Session, SessionStore,
+    Session,
 };
 
 mod db;
 mod memory;
 mod redis;
+mod sess;
 
-pub use memory::MemorySession;
+#[cfg(feature = "session-memory")]
+pub use memory::*;
+
+pub(crate) use sess::SessionStore;
 
 pub struct StoreSession(Box<dyn SessionStore>);
 
@@ -24,6 +28,7 @@ impl StoreSession {
     where
         T: SessionStore + 'static,
     {
+        value.init();
         Self(Box::new(value))
     }
 
@@ -77,7 +82,7 @@ impl StoreSession {
 }
 
 async fn handle(
-    store_session: &StoreSession,
+    store_session: StoreSession,
     request: Request,
     next: Next,
 ) -> Result<Response, Response> {
@@ -95,15 +100,20 @@ async fn handle(
 
     let response = next.run(request).await;
 
-    let new_cookie = Cookie::build(("session", session_id)).http_only(true);
+    let new_cookie = Cookie::build(("session", session_id.to_string())).http_only(true);
     let cookie = cookie.add(new_cookie);
+    store_session
+        .0
+        .update_exp(&session_id)
+        .await
+        .map_err(|e| e.into_response())?;
     Ok((cookie, response).into_response())
 }
 
 #[async_trait::async_trait]
 impl Middleware for StoreSession {
     async fn call(self: Box<Self>, request: Request, next: Next) -> Response {
-        handle(&self, request, next).await.into_response()
+        handle(*self, request, next).await.into_response()
     }
 
     fn clone_box(&self) -> Box<dyn Middleware> {

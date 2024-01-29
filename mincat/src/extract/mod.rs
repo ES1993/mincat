@@ -14,7 +14,6 @@ pub use path::Path;
 pub use query::Query;
 #[cfg(feature = "session")]
 pub use session::Session;
-pub(crate) use session::SessionStore;
 pub use state::State;
 
 pub mod form {

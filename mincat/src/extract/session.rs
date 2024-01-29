@@ -4,18 +4,7 @@ use mincat_core::{
 };
 use serde::{de::DeserializeOwned, Serialize};
 
-#[async_trait::async_trait]
-pub trait SessionStore: Send + Sync {
-    async fn has_session(&self, session_id: &str) -> Result<bool, Error>;
-
-    async fn register_key(&self, session_id: &str) -> Result<(), Error>;
-
-    async fn set(&mut self, session_id: &str, key: &str, value: &str) -> Result<(), Error>;
-
-    async fn get(&mut self, session_id: &str, key: &str) -> Result<Option<String>, Error>;
-
-    fn clone_box(&self) -> Box<dyn SessionStore>;
-}
+use crate::middleware::session::SessionStore;
 
 pub struct Session {
     pub(crate) store: Box<dyn SessionStore>,
@@ -32,13 +21,13 @@ impl Clone for Session {
 }
 
 impl Session {
-    pub async fn set<T: Serialize>(&mut self, key: &str, value: T) -> Result<(), Error> {
+    pub async fn set<T: Serialize>(&self, key: &str, value: T) -> Result<(), Error> {
         let value = serde_json::to_string(&value).map_err(Error::new)?;
         self.store.set(&self.session_id, key, &value).await?;
         Ok(())
     }
 
-    pub async fn get<T: DeserializeOwned>(&mut self, key: &str) -> Result<Option<T>, Error> {
+    pub async fn get<T: DeserializeOwned>(&self, key: &str) -> Result<Option<T>, Error> {
         let value = self.store.get(&self.session_id, key).await?;
         match value {
             Some(value) => Ok(Some(
