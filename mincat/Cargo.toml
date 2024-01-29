@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-session = ["cookie"]
+session = ["dep:uuid", "cookie-private"]
+session-memory = ["session"]
 cookie = ["dep:cookie"]
 cookie-private = ["cookie", "cookie?/private"]
 cookie-signed = ["cookie", "cookie?/signed"]
@@ -34,4 +35,4 @@ cookie = { version = "0.18.0", features = [
     "percent-encode",
     "private",
 ], optional = true }
-uuid = "1.7.0"
+uuid = { version = "1.7.0", features = ["v4"], optional = true }

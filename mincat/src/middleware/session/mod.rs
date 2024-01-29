@@ -1,10 +1,15 @@
-use cookie::{Cookie, CookieJar};
-use http::header::{COOKIE, SET_COOKIE};
+use http::StatusCode;
 use mincat_core::{
-    error::Error, middleware::Middleware, next::Next, request::Request, response::Response,
+    middleware::Middleware,
+    next::Next,
+    request::{FromRequestParts, Request},
+    response::{IntoResponse, Response},
 };
 
-use crate::extract::{Session, SessionStore};
+use crate::extract::{
+    cookie::{Cookie, PrivateCookieJar},
+    Session, SessionStore,
+};
 
 mod db;
 mod memory;
@@ -21,43 +26,84 @@ impl StoreSession {
     {
         Self(Box::new(value))
     }
+
+    async fn new_session(
+        &self,
+        cookie: PrivateCookieJar,
+    ) -> Result<(PrivateCookieJar, Session, String), Response> {
+        let (mut session_id, is_new) = if let Some(session) = cookie.get("session") {
+            (session.value().to_owned(), false)
+        } else {
+            (uuid::Uuid::new_v4().to_string(), true)
+        };
+
+        if is_new {
+            loop {
+                if self
+                    .0
+                    .has_session(&session_id)
+                    .await
+                    .map_err(|e| e.into_response())?
+                {
+                    session_id = uuid::Uuid::new_v4().to_string();
+                } else {
+                    self.0
+                        .register_key(&session_id)
+                        .await
+                        .map_err(|e| e.into_response())?;
+                    let session = Session {
+                        store: self.0.clone_box(),
+                        session_id: session_id.clone(),
+                    };
+                    return Ok((cookie, session, session_id));
+                }
+            }
+        } else if self
+            .0
+            .has_session(&session_id)
+            .await
+            .map_err(|e| e.into_response())?
+        {
+            let session = Session {
+                store: self.0.clone_box(),
+                session_id: session_id.clone(),
+            };
+            Ok((cookie, session, session_id))
+        } else {
+            let cookie = cookie.remove("session");
+            Err((StatusCode::UNAUTHORIZED, cookie, "session expired").into_response())
+        }
+    }
+}
+
+async fn handle(
+    store_session: &StoreSession,
+    request: Request,
+    next: Next,
+) -> Result<Response, Response> {
+    let (mut parts, body) = request.into_parts();
+    let cookie = PrivateCookieJar::from_request_parts(&mut parts)
+        .await
+        .map_err(|e| e.into_response())?;
+    let mut request = Request::from_parts(parts, body);
+
+    let (cookie, session, session_id) = store_session
+        .new_session(cookie)
+        .await
+        .map_err(|e| e.into_response())?;
+    request.extensions_mut().insert(session);
+
+    let response = next.run(request).await;
+
+    let new_cookie = Cookie::build(("session", session_id)).http_only(true);
+    let cookie = cookie.add(new_cookie);
+    Ok((cookie, response).into_response())
 }
 
 #[async_trait::async_trait]
 impl Middleware for StoreSession {
-    async fn call(self: Box<Self>, mut request: Request, next: Next) -> Response {
-        let mut jar = CookieJar::new();
-
-        let iter = request
-            .headers()
-            .get_all(COOKIE)
-            .into_iter()
-            .filter_map(|value| value.to_str().ok())
-            .flat_map(|value| value.split(';'))
-            .filter_map(|cookie| Cookie::parse_encoded(cookie.to_owned()).ok());
-
-        for cookie in iter {
-            jar.add_original(cookie);
-        }
-
-        jar.add(("name", "222"));
-        let session = Session {
-            store: self.0.clone_box(),
-            key: "sd".to_string(),
-        };
-
-        request.extensions_mut().insert(session);
-
-        let mut res = next.run(request).await;
-
-        for cookie in jar.delta() {
-            dbg!(cookie.encoded().to_string());
-            if let Ok(header_value) = cookie.encoded().to_string().parse() {
-                res.headers_mut().append(SET_COOKIE, header_value);
-            }
-        }
-
-        res
+    async fn call(self: Box<Self>, request: Request, next: Next) -> Response {
+        handle(&self, request, next).await.into_response()
     }
 
     fn clone_box(&self) -> Box<dyn Middleware> {

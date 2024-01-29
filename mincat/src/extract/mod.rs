@@ -5,6 +5,7 @@ mod form_urlencoded;
 mod json;
 mod path;
 mod query;
+#[cfg(feature = "session")]
 mod session;
 mod state;
 
