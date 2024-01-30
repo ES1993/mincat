@@ -1,6 +1,10 @@
 mod body_limit;
 
-#[cfg(any(feature = "session", feature = "session-memory"))]
+#[cfg(any(
+    feature = "session",
+    feature = "session-memory",
+    feature = "session-redis"
+))]
 pub mod session;
 
 pub use body_limit::BodyLimit;

@@ -18,7 +18,7 @@ pub trait SessionStore: Send + Sync + 'static {
 
     fn get_delete_exp_task_interval(&self) -> u64;
 
-    fn init(&self) {
+    fn delete_exp_task(&self) {
         if self.get_delete_exp_task_boot_tag() {
             let self_task = self.clone_box();
             let interval = self.get_delete_exp_task_interval();
@@ -34,6 +34,10 @@ pub trait SessionStore: Send + Sync + 'static {
                 }
             });
         }
+    }
+
+    fn init(&mut self) {
+        self.delete_exp_task();
     }
 
     fn clone_box(&self) -> Box<dyn SessionStore>;

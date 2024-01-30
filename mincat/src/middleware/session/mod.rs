@@ -19,12 +19,15 @@ mod sess;
 #[cfg(feature = "session-memory")]
 pub use memory::*;
 
+#[cfg(feature = "session-redis")]
+pub use redis::*;
+
 pub(crate) use sess::SessionStore;
 
 pub struct StoreSession(Box<dyn SessionStore>);
 
 impl StoreSession {
-    pub fn from<T>(value: T) -> Self
+    pub fn from<T>(mut value: T) -> Self
     where
         T: SessionStore + 'static,
     {

@@ -6,5 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mincat = { path = "../../mincat" , features = ["session-memory"]}
+mincat = { path = "../../mincat", features = [
+    "session-memory",
+    "session-redis",
+] }
 tokio = { version = "1.35.1", features = ["full"] }

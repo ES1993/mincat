@@ -1,17 +1,41 @@
 use mincat::{
     extract::{cookie::CookieKey, Session},
     http::{get, Router},
-    middleware::session::{MemorySessionBuilder, StoreSession},
+    middleware::session::{
+        MemorySessionBuilder, RedisClusterSessionBuilder, RedisSessionBuilder, StoreSession,
+    },
 };
 
+#[allow(unused_variables)]
 #[tokio::main]
 async fn main() {
     let memory_session = MemorySessionBuilder::default()
-        .age(10) // Expiration time (unit seconds,default 3600)
+        .age(20) // Expiration time (unit seconds,default 3600)
         .interval(30) // Cleanup expired task cycle time (unit seconds,default 60)
         .build()
         .unwrap();
-    let stor_session = StoreSession::from(memory_session);
+
+    let redis_session = RedisSessionBuilder::default()
+        .age(20)
+        .url("redis://:bitnami@localhost:16381/0".to_string())
+        .prefix("session_key".to_string())
+        .build()
+        .unwrap();
+
+    let redis_cluster_session = RedisClusterSessionBuilder::default()
+        .age(20)
+        .urls(vec![
+            "redis://:bitnami@localhost:16381/0".to_string(),
+            "redis://:bitnami@localhost:16382/0".to_string(),
+            "redis://:bitnami@localhost:16383/0".to_string(),
+        ])
+        .prefix("session_key".to_string())
+        .build()
+        .unwrap();
+
+    // let stor_session = StoreSession::from(memory_session);
+    // let stor_session = StoreSession::from(redis_session);
+    let stor_session = StoreSession::from(redis_cluster_session);
 
     let router = Router::new().route(hello).middleware(stor_session);
 
