@@ -18,12 +18,16 @@ use crate::extract::{
 };
 
 mod memory;
+mod mysql;
 mod postgres;
 mod redis;
 mod sess;
 
 #[cfg(feature = "session-postgres")]
 pub use postgres::*;
+
+#[cfg(feature = "session-mysql")]
+pub use mysql::*;
 
 #[cfg(feature = "session-memory")]
 pub use memory::*;
