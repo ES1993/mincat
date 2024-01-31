@@ -9,6 +9,7 @@ edition = "2021"
 session = ["dep:uuid", "cookie-private"]
 session-memory = ["session"]
 session-redis = ["session", "dep:redis", "dep:redis_pool"]
+session-postgres = ["session", "dep:sqlx", "sqlx/postgres"]
 cookie = ["dep:cookie"]
 cookie-private = ["cookie", "cookie?/private"]
 cookie-signed = ["cookie", "cookie?/signed"]
@@ -41,3 +42,4 @@ derive_builder = "0.13.0"
 chrono = "0.4.33"
 redis = { version = "0.24.0", optional = true }
 redis_pool = { version = "0.3.0", features = ["cluster"], optional = true }
+sqlx = { version = "0.7.3", features = ["runtime-tokio"], optional = true }

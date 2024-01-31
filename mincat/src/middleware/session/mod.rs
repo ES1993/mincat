@@ -1,3 +1,8 @@
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+
 use http::StatusCode;
 use mincat_core::{
     middleware::Middleware,
@@ -5,16 +10,20 @@ use mincat_core::{
     request::{FromRequestParts, Request},
     response::{IntoResponse, Response},
 };
+use tokio::sync::RwLock;
 
 use crate::extract::{
     cookie::{Cookie, PrivateCookieJar},
     Session,
 };
 
-mod db;
 mod memory;
+mod postgres;
 mod redis;
 mod sess;
+
+#[cfg(feature = "session-postgres")]
+pub use postgres::*;
 
 #[cfg(feature = "session-memory")]
 pub use memory::*;
@@ -24,15 +33,51 @@ pub use redis::*;
 
 pub(crate) use sess::SessionStore;
 
-pub struct StoreSession(Box<dyn SessionStore>);
+pub struct StoreSession {
+    store: Arc<RwLock<Box<dyn SessionStore>>>,
+    init_tag: Arc<AtomicBool>,
+}
 
 impl StoreSession {
-    pub fn from<T>(mut value: T) -> Self
+    pub fn from<T>(value: T) -> Self
     where
         T: SessionStore + 'static,
     {
-        value.init();
-        Self(Box::new(value))
+        Self {
+            store: Arc::new(RwLock::new(Box::new(value))),
+            init_tag: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    async fn init(&self) -> Result<(), Response> {
+        if !self.init_tag.load(Ordering::SeqCst) {
+            self.store
+                .write()
+                .await
+                .init()
+                .await
+                .map_err(|e| e.into_response())?;
+            self.init_tag.store(true, Ordering::SeqCst);
+        }
+        Ok(())
+    }
+
+    async fn has_session(&self, session_id: &str) -> Result<bool, Response> {
+        self.store
+            .read()
+            .await
+            .has_session(session_id)
+            .await
+            .map_err(|e| e.into_response())
+    }
+
+    async fn register_key(&self, session_id: &str) -> Result<(), Response> {
+        self.store
+            .read()
+            .await
+            .register_key(session_id)
+            .await
+            .map_err(|e| e.into_response())
     }
 
     async fn new_session(
@@ -47,33 +92,20 @@ impl StoreSession {
 
         if is_new {
             loop {
-                if self
-                    .0
-                    .has_session(&session_id)
-                    .await
-                    .map_err(|e| e.into_response())?
-                {
+                if self.has_session(&session_id).await? {
                     session_id = uuid::Uuid::new_v4().to_string();
                 } else {
-                    self.0
-                        .register_key(&session_id)
-                        .await
-                        .map_err(|e| e.into_response())?;
+                    self.register_key(&session_id).await?;
                     let session = Session {
-                        store: self.0.clone_box(),
+                        store: self.store.read().await.clone_box(),
                         session_id: session_id.clone(),
                     };
                     return Ok((cookie, session, session_id));
                 }
             }
-        } else if self
-            .0
-            .has_session(&session_id)
-            .await
-            .map_err(|e| e.into_response())?
-        {
+        } else if self.has_session(&session_id).await? {
             let session = Session {
-                store: self.0.clone_box(),
+                store: self.store.read().await.clone_box(),
                 session_id: session_id.clone(),
             };
             Ok((cookie, session, session_id))
@@ -89,6 +121,7 @@ async fn handle(
     request: Request,
     next: Next,
 ) -> Result<Response, Response> {
+    store_session.init().await?;
     let (mut parts, body) = request.into_parts();
     let cookie = PrivateCookieJar::from_request_parts(&mut parts)
         .await
@@ -106,7 +139,9 @@ async fn handle(
     let new_cookie = Cookie::build(("session", session_id.to_string())).http_only(true);
     let cookie = cookie.add(new_cookie);
     store_session
-        .0
+        .store
+        .read()
+        .await
         .update_exp(&session_id)
         .await
         .map_err(|e| e.into_response())?;
@@ -120,7 +155,10 @@ impl Middleware for StoreSession {
     }
 
     fn clone_box(&self) -> Box<dyn Middleware> {
-        Box::new(StoreSession(self.0.clone_box()))
+        Box::new(StoreSession {
+            store: self.store.clone(),
+            init_tag: self.init_tag.clone(),
+        })
     }
 }
 

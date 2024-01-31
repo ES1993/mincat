@@ -84,6 +84,12 @@ async fn update_exp(session_key: &str, age: i64, conn: impl ConnectionLike) -> R
 
 #[async_trait::async_trait]
 impl SessionStore for RedisSession {
+    async fn init(&mut self) -> Result<(), Error> {
+        let client = Client::open(self.url.as_str()).expect("can't connect to redis");
+        self.pool = Some(RedisPool::from(client));
+        Ok(())
+    }
+
     async fn has_session(&self, session_id: &str) -> Result<bool, Error> {
         has_session(&self.session_key(session_id), self.get_conn().await?).await
     }
@@ -130,11 +136,6 @@ impl SessionStore for RedisSession {
 
     fn get_delete_exp_task_interval(&self) -> u64 {
         0
-    }
-
-    fn init(&mut self) {
-        let client = Client::open(self.url.as_str()).expect("can't connect to redis");
-        self.pool = Some(RedisPool::from(client));
     }
 
     fn clone_box(&self) -> Box<dyn SessionStore> {
@@ -170,6 +171,13 @@ impl RedisClusterSession {
 
 #[async_trait::async_trait]
 impl SessionStore for RedisClusterSession {
+    async fn init(&mut self) -> Result<(), Error> {
+        let urls = self.urls.iter().map(|s| s.as_ref()).collect::<Vec<_>>();
+        let client = ClusterClient::new(urls).expect("can't connect to redis");
+        self.pool = Some(ClusterRedisPool::from(client));
+        Ok(())
+    }
+
     async fn has_session(&self, session_id: &str) -> Result<bool, Error> {
         has_session(&self.session_key(session_id), self.get_conn().await?).await
     }
@@ -216,12 +224,6 @@ impl SessionStore for RedisClusterSession {
 
     fn get_delete_exp_task_interval(&self) -> u64 {
         0
-    }
-
-    fn init(&mut self) {
-        let urls = self.urls.iter().map(|s| s.as_ref()).collect::<Vec<_>>();
-        let client = ClusterClient::new(urls).expect("can't connect to redis");
-        self.pool = Some(ClusterRedisPool::from(client));
     }
 
     fn clone_box(&self) -> Box<dyn SessionStore> {

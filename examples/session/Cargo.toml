@@ -9,5 +9,6 @@ edition = "2021"
 mincat = { path = "../../mincat", features = [
     "session-memory",
     "session-redis",
+    "session-postgres",
 ] }
 tokio = { version = "1.35.1", features = ["full"] }

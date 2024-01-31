@@ -2,7 +2,8 @@ use mincat::{
     extract::{cookie::CookieKey, Session},
     http::{get, Router},
     middleware::session::{
-        MemorySessionBuilder, RedisClusterSessionBuilder, RedisSessionBuilder, StoreSession,
+        MemorySessionBuilder, PostgresSessionBuilder, RedisClusterSessionBuilder,
+        RedisSessionBuilder, StoreSession,
     },
 };
 
@@ -33,9 +34,18 @@ async fn main() {
         .build()
         .unwrap();
 
+    let postgres_session = PostgresSessionBuilder::default()
+        .url("postgresql://liuyang:liuyang@localhost:30000/postgres".to_string())
+        .table_name("xxx_session".to_string())
+        .age(20)
+        .interval(30)
+        .build()
+        .unwrap();
+
     // let stor_session = StoreSession::from(memory_session);
     // let stor_session = StoreSession::from(redis_session);
     let stor_session = StoreSession::from(redis_cluster_session);
+    // let stor_session = StoreSession::from(postgres_session);
 
     let router = Router::new().route(hello).middleware(stor_session);
 

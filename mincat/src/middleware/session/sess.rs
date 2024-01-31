@@ -2,6 +2,11 @@ use mincat_core::error::Error;
 
 #[async_trait::async_trait]
 pub trait SessionStore: Send + Sync + 'static {
+    async fn init(&mut self) -> Result<(), Error> {
+        self.delete_exp_task();
+        Ok(())
+    }
+
     async fn has_session(&self, session_id: &str) -> Result<bool, Error>;
 
     async fn register_key(&self, session_id: &str) -> Result<(), Error>;
@@ -34,10 +39,6 @@ pub trait SessionStore: Send + Sync + 'static {
                 }
             });
         }
-    }
-
-    fn init(&mut self) {
-        self.delete_exp_task();
     }
 
     fn clone_box(&self) -> Box<dyn SessionStore>;
