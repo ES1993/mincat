@@ -10,7 +10,7 @@ pub mod http {
     pub use http::{Method, StatusCode};
     pub use mincat_core::{
         body::Body,
-        request::{FromRequest, Parts, Request},
+        request::{FromRequest, FromRequestParts, Parts, Request},
         response::{IntoResponse, Response},
         route::Route,
         router::Router,
