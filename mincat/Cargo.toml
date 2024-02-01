@@ -20,6 +20,7 @@ mincat-core = { path = "../mincat-core" }
 mincat-macro = { path = "../mincat-macro" }
 http = "1.0.0"
 tokio = { version = "1.35.1", features = ["full"] }
+tokio-util = "0.7.10"
 hyper = { version = "1.1.0", features = ["full"] }
 hyper-util = { version = "0.1.2", features = ["full"] }
 http-body-util = "0.1.0"
@@ -32,6 +33,7 @@ serde_json = "1.0.111"
 serde_qs = "0.12.0"
 serde_urlencoded = "0.7.1"
 mime = "0.3.17"
+mime_guess = "2.0.4"
 multer = "3.0.0"
 multer-derive = "0.1.1-alpha"
 cookie = { version = "0.18.0", features = [
@@ -44,3 +46,4 @@ chrono = "0.4.33"
 redis = { version = "0.24.0", optional = true }
 redis_pool = { version = "0.3.0", features = ["cluster"], optional = true }
 sqlx = { version = "0.7.3", features = ["runtime-tokio"], optional = true }
+futures-util = "0.3.30"

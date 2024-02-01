@@ -4,6 +4,7 @@ pub(crate) mod app;
 pub mod extract;
 pub mod middleware;
 pub mod response;
+pub mod route;
 
 pub mod http {
     pub use http::{Method, StatusCode};
