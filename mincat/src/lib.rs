@@ -7,6 +7,15 @@ pub mod response;
 pub mod route;
 
 pub mod http {
+    pub mod header {
+        pub use http::header::*;
+        pub use http::HeaderValue;
+    }
+
+    pub mod mime {
+        pub use mime::*;
+    }
+
     pub use http::{Method, StatusCode};
     pub use mincat_core::{
         body::Body,
