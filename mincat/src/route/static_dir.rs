@@ -1,8 +1,5 @@
 use derive_builder::Builder;
-use futures_util::TryStreamExt;
 use http::{header, HeaderValue, Method, StatusCode};
-use http_body_util::StreamBody;
-use hyper::body::Frame;
 use mincat_core::{
     body::Body,
     error::Error,
@@ -131,8 +128,6 @@ impl FromRequestParts for FilePath {
 async fn static_dir_handle(static_dir: StaticDir) -> Result<Response, Error> {
     let (file, path) = static_dir.open_file().await?;
     let reader_stream = ReaderStream::new(file);
-    let stream_body = StreamBody::new(reader_stream.map_ok(Frame::data));
-
     let file_mime = mime_guess::from_path(path)
         .first()
         .unwrap_or(mime::APPLICATION_OCTET_STREAM)
@@ -143,7 +138,7 @@ async fn static_dir_handle(static_dir: StaticDir) -> Result<Response, Error> {
             header::CONTENT_TYPE,
             HeaderValue::from_str(&file_mime).map_err(Error::new)?,
         )],
-        Body::new(stream_body),
+        Body::from_stream(reader_stream),
     )
         .into_response())
 }

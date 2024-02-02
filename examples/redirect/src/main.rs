@@ -1,6 +1,6 @@
 use mincat::{
     http::{get, Router},
-    response::redirect::Redirect,
+    response::Redirect,
 };
 
 #[tokio::main]
