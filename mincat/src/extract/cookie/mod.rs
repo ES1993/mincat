@@ -4,23 +4,18 @@ use http::{
     HeaderMap,
 };
 
-#[cfg(feature = "cookie")]
 mod normal;
-#[cfg(feature = "cookie-private")]
 mod private;
-#[cfg(feature = "cookie-signed")]
 mod signed;
 
-#[cfg(feature = "cookie")]
-pub use self::normal::CookieJar;
+pub use normal::CookieJar;
 #[cfg(feature = "cookie-private")]
-pub use self::private::PrivateCookieJar;
+pub use private::PrivateCookieJar;
 #[cfg(feature = "cookie-signed")]
-pub use self::signed::SignedCookieJar;
-#[cfg(any(feature = "cookie-private", feature = "cookie-signed"))]
+pub use signed::SignedCookieJar;
+
 pub use cookie::Cookie;
 
-#[cfg(any(feature = "cookie-private", feature = "cookie-signed"))]
 #[derive(Clone)]
 pub struct CookieKey(Key);
 

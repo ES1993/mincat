@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 
 use bytes::Bytes;
-use http::{header, HeaderName, HeaderValue, StatusCode};
+use http::{header, HeaderMap, HeaderName, HeaderValue, StatusCode};
 use mincat_macro::repeat_macro_max_generics_param;
 
 use crate::body::Body;
@@ -110,6 +110,13 @@ impl IntoResponse for Bytes {
             HeaderValue::from_static(mime::APPLICATION_OCTET_STREAM.as_ref()),
         );
         res
+    }
+}
+
+impl IntoResponseParts for HeaderMap {
+    fn into_response_parts(self, mut response: Response) -> Response {
+        response.headers_mut().extend(self);
+        response
     }
 }
 
