@@ -6,12 +6,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
+default = ["body-limit", "cors", "form", "json", "path", "query", "state"]
+body-limit = []
+cors = []
 session = ["dep:uuid", "cookie-private"]
 session-memory = ["session"]
 session-redis = ["session", "dep:redis", "dep:redis_pool"]
-session-postgres = ["session", "dep:sqlx", "sqlx/postgres"]
-session-mysql = ["session", "dep:sqlx", "sqlx/mysql"]
+session-postgres = ["session", "dep:sqlx", "sqlx?/postgres"]
+session-mysql = ["session", "dep:sqlx", "sqlx?/mysql"]
+
+form = []
+json = []
+path = []
+query = []
+state = []
 cookie = ["dep:cookie"]
 cookie-private = ["cookie", "cookie?/private"]
 cookie-signed = ["cookie", "cookie?/signed"]

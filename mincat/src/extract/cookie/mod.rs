@@ -4,13 +4,18 @@ use http::{
     HeaderMap,
 };
 
+#[cfg(feature = "cookie")]
 mod normal;
-mod private;
-mod signed;
-
+#[cfg(feature = "cookie")]
 pub use normal::CookieJar;
+
+#[cfg(feature = "cookie-private")]
+mod private;
 #[cfg(feature = "cookie-private")]
 pub use private::PrivateCookieJar;
+
+#[cfg(feature = "cookie-signed")]
+mod signed;
 #[cfg(feature = "cookie-signed")]
 pub use signed::SignedCookieJar;
 

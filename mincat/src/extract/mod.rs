@@ -1,21 +1,11 @@
 #[cfg(feature = "cookie")]
 pub mod cookie;
+
+#[cfg(feature = "form")]
 mod form_data;
+#[cfg(feature = "form")]
 mod form_urlencoded;
-mod json;
-mod path;
-mod query;
-#[cfg(feature = "session")]
-mod session;
-mod state;
-
-pub use json::Json;
-pub use path::Path;
-pub use query::Query;
-#[cfg(feature = "session")]
-pub use session::Session;
-pub use state::State;
-
+#[cfg(feature = "form")]
 pub mod form {
     pub use super::form_data::{FormData, FromMultipartNull};
     pub use super::form_urlencoded::FormUrlencoded;
@@ -27,6 +17,31 @@ pub mod form {
 use http::StatusCode;
 use mincat_core::response::{IntoResponse, Response};
 use std::{error::Error, fmt::Display};
+
+#[cfg(feature = "json")]
+mod json;
+#[cfg(feature = "json")]
+pub use json::Json;
+
+#[cfg(feature = "path")]
+mod path;
+#[cfg(feature = "path")]
+pub use path::Path;
+
+#[cfg(feature = "query")]
+mod query;
+#[cfg(feature = "query")]
+pub use query::Query;
+
+#[cfg(feature = "session")]
+mod session;
+#[cfg(feature = "session")]
+pub use session::Session;
+
+#[cfg(feature = "state")]
+mod state;
+#[cfg(feature = "state")]
+pub use state::State;
 
 #[derive(Debug)]
 pub struct ExtractError(pub String);

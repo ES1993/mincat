@@ -1,16 +1,12 @@
 mod body_limit;
 
-#[cfg(any(
-    feature = "session",
-    feature = "session-memory",
-    feature = "session-redis",
-    feature = "session-postgres",
-    feature = "session-mysql"
-))]
+#[cfg(feature = "session")]
 pub mod session;
 
+#[cfg(feature = "cors")]
 pub mod cors;
 
+#[cfg(feature = "body-limit")]
 pub use body_limit::BodyLimit;
 
 pub use mincat_core::{

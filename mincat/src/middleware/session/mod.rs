@@ -1,8 +1,7 @@
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
+use crate::extract::{
+    cookie::{Cookie, PrivateCookieJar},
+    Session,
 };
-
 use http::StatusCode;
 use mincat_core::{
     middleware::Middleware,
@@ -10,31 +9,35 @@ use mincat_core::{
     request::{FromRequestParts, Request},
     response::{IntoResponse, Response},
 };
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 use tokio::sync::RwLock;
 
-use crate::extract::{
-    cookie::{Cookie, PrivateCookieJar},
-    Session,
-};
-
+#[cfg(feature = "session-memory")]
 mod memory;
-mod mysql;
-mod postgres;
-mod redis;
-mod sess;
-
-#[cfg(feature = "session-postgres")]
-pub use postgres::*;
-
-#[cfg(feature = "session-mysql")]
-pub use mysql::*;
-
 #[cfg(feature = "session-memory")]
 pub use memory::*;
 
 #[cfg(feature = "session-redis")]
+mod redis;
+#[cfg(feature = "session-redis")]
 pub use redis::*;
 
+#[cfg(feature = "session-postgres")]
+mod postgres;
+#[cfg(feature = "session-postgres")]
+pub use postgres::*;
+
+#[cfg(feature = "session-mysql")]
+mod mysql;
+#[cfg(feature = "session-mysql")]
+pub use mysql::*;
+
+#[cfg(feature = "session")]
+mod sess;
+#[cfg(feature = "session")]
 pub(crate) use sess::SessionStore;
 
 pub struct StoreSession {
