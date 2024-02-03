@@ -7,8 +7,9 @@ use super::SessionStore;
 
 #[derive(Clone, Debug, Builder)]
 pub struct PostgresSession {
+    #[builder(setter(into))]
     url: String,
-    #[builder(default = "String::from(\"mincat_session\")")]
+    #[builder(setter(into), default = "String::from(\"mincat_session\")")]
     table_name: String,
     #[builder(default = "3600")]
     age: i64,

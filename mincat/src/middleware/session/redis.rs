@@ -9,10 +9,11 @@ use super::SessionStore;
 pub struct RedisSession {
     #[builder(setter(skip))]
     pool: Option<SingleRedisPool>,
+    #[builder(setter(into))]
     url: String,
     #[builder(default = "3600")]
     age: i64,
-    #[builder(default = "String::from(\"mincat:session\")")]
+    #[builder(setter(into), default = "String::from(\"mincat:session\")")]
     prefix: String,
 }
 
@@ -147,10 +148,11 @@ impl SessionStore for RedisSession {
 pub struct RedisClusterSession {
     #[builder(setter(skip))]
     pool: Option<ClusterRedisPool>,
+    #[builder(setter(into, each(name = "url", into)))]
     urls: Vec<String>,
     #[builder(default = "3600")]
     age: i64,
-    #[builder(default = "String::from(\"mincat:session\")")]
+    #[builder(setter(into), default = "String::from(\"mincat:session\")")]
     prefix: String,
 }
 

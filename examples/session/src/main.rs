@@ -18,33 +18,31 @@ async fn main() {
 
     let redis_session = RedisSessionBuilder::default()
         .age(20)
-        .url("redis://:bitnami@localhost:16381/0".to_string())
-        .prefix("session_key".to_string())
+        .url("redis://:bitnami@localhost:16381/0")
+        .prefix("session_key")
         .build()
         .unwrap();
 
     let redis_cluster_session = RedisClusterSessionBuilder::default()
         .age(20)
-        .urls(vec![
-            "redis://:bitnami@localhost:16381/0".to_string(),
-            "redis://:bitnami@localhost:16382/0".to_string(),
-            "redis://:bitnami@localhost:16383/0".to_string(),
-        ])
-        .prefix("session_key".to_string())
+        .url("redis://:bitnami@localhost:16381/0")
+        .url("redis://:bitnami@localhost:16382/0")
+        .url("redis://:bitnami@localhost:16383/0")
+        .prefix("session_key")
         .build()
         .unwrap();
 
     let postgres_session = PostgresSessionBuilder::default()
-        .url("postgresql://localhost:30000/postgres".to_string())
-        .table_name("xxx_session".to_string())
+        .url("postgresql://localhost:30000/postgres")
+        .table_name("xxx_session")
         .age(20)
         .interval(30)
         .build()
         .unwrap();
 
     let mysql_session = MysqlSessionBuilder::default()
-        .url("mysql://localhost:3306/sys".to_string())
-        .table_name("xxx_session".to_string())
+        .url("mysql://localhost:3306/sys")
+        .table_name("xxx_session")
         .age(20)
         .interval(30)
         .build()
