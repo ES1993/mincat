@@ -8,11 +8,11 @@ pub struct HttpLog;
 #[async_trait::async_trait]
 impl Middleware for HttpLog {
     #[tracing::instrument(
-        name = "mincat[http-log]", 
-        skip(self, request, next), 
+        name = "mincat[http-log]",
+        skip(self, request, next),
         fields(
-            uri = request.uri().to_string(), 
-            method = request.method().to_string(),
+            uri = request.uri().to_string(),
+            method = request.method().to_string()
         )
     )]
     async fn call(self: Box<Self>, request: Request, next: Next) -> Response {

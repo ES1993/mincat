@@ -43,6 +43,9 @@ mod state;
 #[cfg(feature = "state")]
 pub use state::State;
 
+#[cfg(feature = "websocket")]
+pub mod websocket;
+
 #[derive(Debug)]
 pub struct ExtractError(pub String);
 
