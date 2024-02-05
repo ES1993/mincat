@@ -6,4 +6,4 @@ mincat is a fast and compact server-side framework
 
 # 例子
 
-1. 基本的hello word[./examples/hello/src/main.rs]
+1. [基本的hello word](./examples/hello/src/main.rs)
