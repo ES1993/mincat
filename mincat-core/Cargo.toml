@@ -3,7 +3,7 @@ name = "mincat-core"
 version = "0.1.0"
 edition = "2021"
 description = "Core types and traits for mincat"
-license = "GPL"
+license = "GPL-3.0"
 repository = "https://github.com/ES1993/mincat"
 keywords = ["http", "web", "framework"]
 
