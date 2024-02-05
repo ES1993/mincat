@@ -10,7 +10,7 @@ keywords = ["http", "web", "framework"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mincat-macro = { path = "../mincat-macro", version = "*" }
+mincat-macro = { path = "../mincat-macro", version = "0.1.0" }
 matchit = "0.7.3"
 http = "1.0.0"
 http-body = "1.0.0"
