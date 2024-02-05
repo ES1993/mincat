@@ -2,6 +2,22 @@
 
 mincat是一个快速小巧的服务端框架
 
+```rust
+use mincat::http::{get, Router};
+
+#[tokio::main]
+async fn main() {
+    let router = Router::new().route(hello);
+
+    mincat::router(router).run("127.0.0.1:3000").await;
+}
+
+#[get("/hello")]
+async fn hello() -> &'static str {
+    "hello word"
+}
+```
+
 [English](./README.md) · 简体中文
 
 # 例子
