@@ -1,6 +1,6 @@
 # mincat
 
-mincat is a fast and compact server-side framework
+mincat是一个快速小巧的服务端框架
 
 [English](./README.md) · 简体中文
 

@@ -1,6 +1,6 @@
 # mincat
 
-react state management, the usage is similar to vue's state management
+mincat is a fast and compact server-side framework
 
 English · [简体中文](./README.zh-cn.md)
 
