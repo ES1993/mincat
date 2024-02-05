@@ -6,9 +6,19 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["body-limit", "cors", "form", "json", "path", "query", "state"]
+default = [
+    "body-limit",
+    "cors",
+    "form",
+    "json",
+    "path",
+    "query",
+    "state",
+    "http-log",
+]
 body-limit = []
 cors = []
+http-log = []
 session = ["dep:uuid", "cookie-private"]
 session-memory = ["session"]
 session-redis = ["session", "dep:redis", "dep:redis_pool"]
