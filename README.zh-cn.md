@@ -1,4 +1,4 @@
-# mincat
+# MinCat
 
 mincat是一个快速小巧的服务端框架
 
@@ -19,6 +19,12 @@ async fn hello() -> &'static str {
 ```
 
 [English](./README.md) · 简体中文
+
+# 安装
+
+```shell
+cargo add mincat
+```
 
 # 例子
 

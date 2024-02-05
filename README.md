@@ -1,4 +1,4 @@
-# mincat
+# MinCat
 
 mincat is a fast and compact server-side framework
 
@@ -20,7 +20,13 @@ async fn hello() -> &'static str {
 
 English · [简体中文](./README.zh-cn.md)
 
-# 例子
+# Install
+
+```shell
+cargo add mincat
+```
+
+# Examples
 
 1. [Basic Hello World](./examples/hello/src/main.rs)
 2. [How to Limit Body Size](./examples/body-limit/src/main.rs)
